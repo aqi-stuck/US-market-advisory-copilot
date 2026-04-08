@@ -21,7 +21,6 @@ COPY pyproject.toml ./
 # Install dependencies
 RUN poetry export -o requirements.txt -f requirements.txt --without-hashes
 RUN pip install --user --no-cache-dir -r requirements.txt
-
 # Production stage
 FROM python:3.11-slim AS production
 
