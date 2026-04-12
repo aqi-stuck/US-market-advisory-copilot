@@ -11,8 +11,9 @@ app = FastAPI(
 
 # Include API routes
 app.include_router(health_router, tags=["health"])
-app.include_router(query_router, tags=["query"])
+app.include_router(query_router, prefix=settings.API_V1_STR, tags=["query"])
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

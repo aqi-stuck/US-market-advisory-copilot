@@ -1,11 +1,14 @@
 from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 from typing import Optional
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Pakistan Market Advisory RAG System"
     VERSION: str = "0.1.0"
-    DESCRIPTION: str = "A RAG system for providing insights on Pakistani financial markets"
+    DESCRIPTION: str = (
+        "A RAG system for providing insights on Pakistani financial markets"
+    )
 
     # Database settings
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/market_advisory_db"
@@ -17,6 +20,7 @@ class Settings(BaseSettings):
     # API settings
     API_V1_STR: str = "/v1"
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
 
     # Security
     API_KEY: Optional[str] = None
@@ -25,8 +29,7 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()
