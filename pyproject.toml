@@ -2,7 +2,7 @@
 name = "pk-market-advisory-rag"
 version = "0.1.0"
 description = "A RAG system for Pakistan market advisory"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Syed_Aqdas <aqis20539@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
