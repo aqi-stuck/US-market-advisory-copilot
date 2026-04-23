@@ -25,7 +25,11 @@ install:
 test: 
 	poetry run pytest
 
+<<<<<<< Updated upstream
 run: #
+=======
+run:
+>>>>>>> Stashed changes
 	poetry run uvicorn app.main:app --reload
 
 docker-build: 
