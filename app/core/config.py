@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/v1"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
+    ENVIRONMENT: str = "development"
 
     # Security
     API_KEY: Optional[str] = None

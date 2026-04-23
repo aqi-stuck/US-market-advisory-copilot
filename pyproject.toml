@@ -3,6 +3,7 @@ name = "pk-market-advisory-rag"
 version = "0.1.0"
 description = "A RAG system for Pakistan market advisory"
 authors = ["Syed_Aqdas <aqis20539@gmail.com>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -38,7 +39,6 @@ flake8 = "^6.1.0"
 mypy = "^1.7.1"
 ruff = "^0.1.6"
 pre-commit = "^3.5.0"
-jupyter = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]

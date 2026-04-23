@@ -25,3 +25,5 @@ data/processed/
 .vscode/
 .idea/
 .DS_Store
+.devcontainer/
+.vscode/
