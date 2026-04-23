@@ -17,14 +17,11 @@ htmlcov/
 
 # Local env
 .env
-
-# Logs and data artifacts
 logs/
 data/raw/
 data/interim/
 data/processed/
 
-# Editors / OS
 .vscode/
 .idea/
 .DS_Store

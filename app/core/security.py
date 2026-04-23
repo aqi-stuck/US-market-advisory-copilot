@@ -1,20 +1,24 @@
-from fastapi import Security, HTTPException, status
+from typing import Optional
+
+from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from app.core.config import settings
 
+security = HTTPBearer(auto_error=False)
 
-security = HTTPBearer()
 
-
-def get_api_key(credentials: HTTPAuthorizationCredentials = Security(security)) -> str:
+def get_api_key(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
+) -> str:
     """
-    Verify the API key from the Authorization header
+    If API_KEY is unset, allow requests in development mode.
+    If API_KEY is set, require matching Bearer token.
     """
     if not settings.API_KEY:
-        # If no API key is set in config, allow all requests (development mode)
-        return credentials.credentials
+        return credentials.credentials if credentials else "dev-mode"
 
-    if credentials.credentials != settings.API_KEY:
+    if not credentials or credentials.credentials != settings.API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key",

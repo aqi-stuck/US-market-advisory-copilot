@@ -1,8 +1,7 @@
-# Pakistan Market Advisory RAG System Makefile
 
 .PHONY: help setup install test run docker-build docker-up docker-down clean
 
-help: ## Display this help message
+help: 
 	@echo "Pakistan Market Advisory RAG System"
 	@echo ""
 	@echo "Usage:"
@@ -16,29 +15,29 @@ help: ## Display this help message
 	@echo "  make clean          Clean up temporary files"
 	@echo ""
 
-setup: ## Setup the development environment
+setup:
 	cp .env.example .env
 	poetry install
 
-install: ## Install dependencies
+install: 
 	poetry install
 
-test: ## Run tests
+test: 
 	poetry run pytest
 
-run: ## Run the application
+run: #
 	poetry run uvicorn app.main:app --reload
 
-docker-build: ## Build Docker images
+docker-build: 
 	docker-compose build
 
-docker-up: ## Start services with Docker Compose
+docker-up:
 	docker-compose up -d
 
-docker-down: ## Stop services with Docker Compose
+docker-down: 
 	docker-compose down
 
-clean: ## Clean up temporary files
+clean:
 	rm -rf __pycache__
 	rm -rf */__pycache__
 	rm -rf */*/__pycache__
