@@ -4,7 +4,9 @@ from app.llm.embeddings import simple_embedding
 from app.vectorstore.qdrant_client import search_similar
 
 
-def retrieve_chunks(query: str, top_k: int = 5, lane_hint: Optional[str] = None) -> List[Dict[str, Any]]:
+def retrieve_chunks(
+    query: str, top_k: int = 5, lane_hint: Optional[str] = None
+) -> List[Dict[str, Any]]:
     vector = simple_embedding(query)
     hits = search_similar(vector, limit=top_k)
 
