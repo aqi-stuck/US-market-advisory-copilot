@@ -1,11 +1,14 @@
 import json
 from datetime import datetime
 from pathlib import Path
+from uuid import uuid5, NAMESPACE_URL
 
 from app.core.config import settings
 from app.data.preprocess.chunking import chunk_text
+from app.llm.embeddings import simple_embedding
 from app.db.models import Chunk, Document, IngestionRun
 from app.db.session import SessionLocal
+from app.vectorstore.qdrant_client import upsert_points
 
 
 def parse_datetime(value: str | None):
@@ -40,6 +43,7 @@ def main() -> None:
     db.refresh(run)
 
     total_chunks = 0
+    qdrant_points = []
 
     try:
         for row in records:
@@ -62,19 +66,39 @@ def main() -> None:
             )
 
             for idx, text_part in enumerate(chunks):
+                point_id = str(uuid5(NAMESPACE_URL, f"{run.id}-{doc.id}-{idx}"))
+                vector = simple_embedding(text_part)
+
                 db.add(
                     Chunk(
                         document_id=doc.id,
                         chunk_index=idx,
                         chunk_text=text_part,
-                        qdrant_point_id=None,
-                        embedding_model=None,
+                        qdrant_point_id=point_id,
+                        embedding_model="simple_embedding",
                         extra_metadata={"lane": doc.lane},
                     )
                 )
 
+                qdrant_points.append(
+                    {
+                        "id": point_id,
+                        "vector": vector,
+                        "payload": {
+                            "document_id": doc.id,
+                            "chunk_index": idx,
+                            "lane": doc.lane,
+                            "title": doc.title,
+                            "source_name": doc.source_name,
+                            "source_url": doc.source_url,
+                            "chunk_text": text_part,
+                        },
+                    }
+                )
+
             total_chunks += len(chunks)
 
+        upsert_points(qdrant_points)
         run.status = "completed"
         run.chunk_count = total_chunks
         db.commit()
