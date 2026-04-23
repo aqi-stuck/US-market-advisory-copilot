@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Bootstrap script for Pakistan Market Advisory RAG System
+# Bootstrap script for US Market Advisory RAG System
 
 set -e  # Exit on any error
 
-echo "Bootstrapping Pakistan Market Advisory RAG System..."
+echo "Bootstrapping US Market Advisory RAG System..."
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then

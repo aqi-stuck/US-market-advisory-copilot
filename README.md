@@ -1,19 +1,20 @@
-# Pakistan Market Advisory RAG System
+# US Market Advisory RAG System
 
-A Retrieval-Augmented Generation (RAG) system designed to provide insights on Pakistani financial markets, including stock trends (PSX), macroeconomic indicators (GDP, inflation), and financial regulations.
+A Retrieval-Augmented Generation (RAG) system designed to provide insights on US financial markets, including stock trends, macroeconomic indicators, and financial regulations.
 
 ## Overview
 
-This system provides a comprehensive platform for analyzing and understanding Pakistan's financial landscape through:
-- Real-time stock market data and trends from PSX
-- Macroeconomic indicators from PBS, SBP, and World Bank
-- Financial regulations and circulars from SECP, SBP, and PSX
+This system provides a comprehensive platform for analyzing and understanding US financial markets through:
+
+- Real-time stock market data and trends from US indices and ETFs
+- Macroeconomic indicators from FRED and related US datasets
+- Financial regulations and updates from SEC and Federal Register sources
 
 ## Architecture
 
 The system follows a modular architecture:
 
-```
+```text
 market-advisory-rag/
 ├─ README.md
 ├─ .gitignore
@@ -56,7 +57,7 @@ market-advisory-rag/
 │  │  ├─ citations.py             # quote spans + source formatting
 │  │  └─ guardrails.py            # refusal rules, scope checks
 │  ├─ data/
-│  │  ├─ sources.py               # source registry (PSX/SBP/SECP/…)
+│  │  ├─ sources.py               # source registry (SEC/FRED/market feeds/...)
 │  │  ├─ loaders/
 │  │  │  ├─ pdf_loader.py
 │  │  │  ├─ csv_loader.py
@@ -94,6 +95,7 @@ market-advisory-rag/
 ## Development
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - Python 3.9+
 - Poetry (for dependency management)
@@ -121,15 +123,18 @@ poetry run python -m app.main
 
 The system integrates three primary data lanes:
 
-### A) Stock Market Trends (PSX)
-- Daily prices, volume, index constituents (KSE-100, sector indices)
+### A) Stock Market Trends (US Equities)
+
+- Daily prices, volume, index constituents (S&P 500, Nasdaq, ETF series)
 - Corporate actions and announcements
 
-### B) GDP + Macro Data (PBS, SBP, World Bank)
-- GDP (nominal/real), CPI, interest rate, FX reserves, trade balance
+### B) GDP + Macro Data (FRED, BEA, BLS)
 
-### C) Financial Regulations (SECP, SBP, PSX)
-- PDFs, circulars, regulations, amendments, dates, applicability
+- GDP (nominal/real), CPI, interest rates, labor and inflation indicators
+
+### C) Financial Regulations (SEC, Federal Register)
+
+- Filings, rule updates, regulatory notices, amendments, dates, applicability
 
 ## Contributing
 

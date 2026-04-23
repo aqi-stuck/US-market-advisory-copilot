@@ -4,11 +4,9 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Pakistan Market Advisory RAG System"
+    PROJECT_NAME: str = "US Market Advisory RAG System"
     VERSION: str = "0.1.0"
-    DESCRIPTION: str = (
-        "A RAG system for providing insights on Pakistani financial markets"
-    )
+    DESCRIPTION: str = "A RAG system for providing insights on US financial markets"
 
     # Database settings
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/market_advisory_db"

@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "pk-market-advisory-rag"
+name = "us-market-advisory-rag"
 version = "0.1.0"
-description = "A RAG system for Pakistan market advisory"
+description = "A RAG system for US market advisory"
 authors = ["Syed_Aqdas <aqis20539@gmail.com>"]
 package-mode = false
 

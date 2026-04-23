@@ -2,7 +2,7 @@
 .PHONY: help setup install test run docker-build docker-up docker-down clean
 
 help: 
-	@echo "Pakistan Market Advisory RAG System"
+	@echo "US Market Advisory RAG System"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make setup          Setup the development environment"
