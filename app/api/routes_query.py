@@ -7,7 +7,7 @@ from app.api.schemas import QueryRequest, QueryResponse
 from app.core.security import get_api_key
 from app.db.models import QueryLog
 from app.db.session import get_db
-from app.rag.retriever import retrieve_chunks
+from app.rag.pipeline import run_pipeline
 
 router = APIRouter()
 
@@ -19,18 +19,16 @@ async def query_endpoint(
     db: Session = Depends(get_db),
 ):
     start = time.perf_counter()
-    retrieved = retrieve_chunks(
-        query=request.query, top_k=request.top_k or 8, lane_hint=request.lane_hint
-    )
-    if not retrieved:
-        answer = "No relevant market context was found for your query."
-    else:
-        parts = [r.get("chunk_text", "").strip() for r in retrieved[:2]]
-        parts = [part for part in parts if part]
-        answer = "\n\n".join(parts)
 
-    retrieved_k = len(retrieved)
-    if request.include_citations:
+    answer, chunks, retrieved_k, reranked_k = run_pipeline(
+        query=request.query,
+        top_k=request.top_k or 8,
+        rerank_k=3,
+        lane_hint=request.lane_hint,
+    )
+
+    citations = []
+    if request.include_citations and chunks:
         citations = [
             {
                 "source_title": item.get("title") or "Unknown source",
@@ -38,10 +36,8 @@ async def query_endpoint(
                 "chunk_id": str(item.get("chunk_id") or ""),
                 "quote": (item.get("chunk_text") or "")[:280],
             }
-            for item in retrieved
+            for item in chunks
         ]
-    else:
-        citations = []
 
     latency_ms = round((time.perf_counter() - start) * 1000, 2)
 
@@ -50,9 +46,9 @@ async def query_endpoint(
         answer=answer,
         lane_hint=request.lane_hint,
         retrieval_k=retrieved_k,
-        reranked_k=0,
+        reranked_k=reranked_k,
         latency_ms=latency_ms,
-        extra_metadata={"stage": "retrieval_mvp"},
+        extra_metadata={"stage": "full_pipeline"},
     )
     db.add(log)
     db.commit()
@@ -63,7 +59,7 @@ async def query_endpoint(
         citations=citations,
         metadata={
             "retrieval_k": retrieved_k,
-            "reranked_k": 0,
+            "reranked_k": reranked_k,
             "latency_ms": latency_ms,
             "query_log_id": log.id,
         },

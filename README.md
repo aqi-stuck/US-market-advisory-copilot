@@ -1,141 +1,252 @@
 # US Market Advisory RAG System
 
-A Retrieval-Augmented Generation (RAG) system designed to provide insights on US financial markets, including stock trends, macroeconomic indicators, and financial regulations.
+A production-grade Retrieval-Augmented Generation (RAG) API that answers natural language questions about US financial markets — equities, macroeconomic indicators, and financial regulations — grounded in real source documents with full citations.
 
-## Overview
+Built with FastAPI, Qdrant, PostgreSQL, and Azure OpenAI.
 
-This system provides a comprehensive platform for analyzing and understanding US financial markets through:
+---
 
-- Real-time stock market data and trends from US indices and ETFs
-- Macroeconomic indicators from FRED and related US datasets
-- Financial regulations and updates from SEC and Federal Register sources
+## What It Does
+
+Ask questions like:
+
+- *"What is the current outlook for US equity markets?"*
+- *"How has CPI trended over the last quarter?"*
+- *"What are the latest SEC disclosure requirements?"*
+
+The system retrieves the most relevant document chunks from a vector store, reranks them for precision, generates a grounded answer using GPT-4o, and returns source citations — all in a single API call.
+
+---
 
 ## Architecture
 
-The system follows a modular architecture:
-
-```text
-market-advisory-rag/
-├─ README.md
-├─ .gitignore
-├─ .env.example
-├─ docker-compose.yml
-├─ Dockerfile
-├─ pyproject.toml                 # or requirements.txt
-├─ Makefile                       # common dev commands
-├─ scripts/
-│  ├─ bootstrap.sh                # one-command setup
-│  ├─ download_data.py            # pulls raw datasets (APIs/CSV/PDF)
-│  ├─ ingest.py                   # runs chunk → embed → upsert
-│  ├─ eval_rag.py                 # offline evaluation
-│  └─ backfill_metadata.py        # optional repair jobs
-├─ data/
-│  ├─ raw/                        # PDFs, CSVs, HTML snapshots
-│  ├─ interim/                    # cleaned, normalized artifacts
-│  └─ processed/                  # chunks (jsonl), embeddings manifest
-├─ notebooks/
-│  ├─ 01_explore_sources.ipynb
-│  ├─ 02_chunking_experiments.ipynb
-│  └─ 03_retrieval_quality.ipynb
-├─ app/
-│  ├─ main.py                     # FastAPI entrypoint
-│  ├─ core/
-│  │  ├─ config.py                # settings, env vars
-│  │  ├─ logging.py               # structured logging
-│  │  ├─ security.py              # API key/JWT helpers
-│  │  └─ exceptions.py            # unified error types
-│  ├─ api/
-│  │  ├─ routes_health.py
-│  │  ├─ routes_query.py
-│  │  ├─ routes_ingest.py         # optional protected endpoints
-│  │  └─ schemas.py               # Pydantic request/response models
-│  ├─ rag/
-│  │  ├─ pipeline.py              # orchestrates retrieve → generate
-│  │  ├─ retriever.py             # vector + filters + hybrid (optional)
-│  │  ├─ reranker.py              # optional cross-encoder rerank
-│  │  ├─ prompt.py                # prompt templates
-│  │  ├─ citations.py             # quote spans + source formatting
-│  │  └─ guardrails.py            # refusal rules, scope checks
-│  ├─ data/
-│  │  ├─ sources.py               # source registry (SEC/FRED/market feeds/...)
-│  │  ├─ loaders/
-│  │  │  ├─ pdf_loader.py
-│  │  │  ├─ csv_loader.py
-│  │  │  └─ web_loader.py
-│  │  ├─ preprocess/
-│  │  │  ├─ clean_text.py
-│  │  │  ├─ normalize_tables.py   # GDP/market tables
-│  │  │  └─ chunking.py
-│  │  └─ metadata.py              # doc_id, section, dates, entity tags
-│  ├─ vectorstore/
-│  │  ├─ qdrant_client.py
-│  │  └─ index.py                 # create collection, upsert, search
-│  ├─ llm/
-│  │  ├─ client.py                # OpenAI/Anthropic/etc wrapper
-│  │  └─ embeddings.py
-│  └─ db/
-│     ├─ models.py                # SQLAlchemy tables (docs, queries, runs)
-│     └─ session.py
-├─ tests/
-│  ├─ test_api.py
-│  ├─ test_chunking.py
-│  ├─ test_retrieval.py
-│  └─ test_guardrails.py
-└─ .github/workflows/
-   ├─ ci.yml                      # lint + tests
-   └─ cd.yml                      # build + push image (optional)
+```
+POST /v1/query
+      │
+      ▼
+ Guardrails ──── rejects off-topic or injection attempts
+      │
+      ▼
+  Retriever ──── embeds query (Azure text-embedding-3-small)
+                 searches Qdrant vector store (cosine similarity)
+      │
+      ▼
+  Reranker ──── scores each chunk for relevance via GPT-4o
+                selects top-k most relevant passages
+      │
+      ▼
+  Generator ─── builds grounded prompt with context
+                calls GPT-4o for final answer
+      │
+      ▼
+  Response ──── answer + citations + metadata logged to Postgres
 ```
 
-## Setup
+### Tech Stack
 
-1. Clone the repository
-2. Copy `.env.example` to `.env` and fill in the required values
-3. Run `make setup` or `./scripts/bootstrap.sh`
+| Layer | Technology |
+|---|---|
+| API | FastAPI + Uvicorn |
+| Vector Store | Qdrant |
+| Embeddings | Azure OpenAI `text-embedding-3-small` (1536-dim) |
+| LLM | Azure OpenAI `gpt-4o` |
+| Database | PostgreSQL + SQLAlchemy + Alembic |
+| Containerization | Docker + Docker Compose |
+| Logging | Structured JSON logging |
+| CI | GitHub Actions |
 
-## Development
+### Data Lanes
+
+| Lane | Sources |
+|---|---|
+| `stocks` | Stooq US market data, S&P 500 / ETF price series |
+| `macro` | FRED — CPI, GDP, interest rates, labor indicators |
+| `regulation` | SEC / Federal Register — filings, rule updates, disclosures |
+
+---
+
+## Project Structure
+
+```
+├── app/
+│   ├── api/
+│   │   ├── routes_health.py       # GET /health
+│   │   ├── routes_ingest.py       # POST /v1/ingest
+│   │   ├── routes_query.py        # POST /v1/query
+│   │   └── schemas.py
+│   ├── core/
+│   │   ├── config.py              # Pydantic settings
+│   │   ├── logging.py             # Structured JSON logging
+│   │   └── security.py            # Bearer token auth
+│   ├── data/preprocess/
+│   │   └── chunking.py            # Sliding window chunker
+│   ├── db/
+│   │   ├── models.py              # Document, Chunk, QueryLog, IngestionRun
+│   │   └── session.py
+│   ├── llm/
+│   │   └── embeddings.py          # Azure OpenAI embed_text()
+│   ├── rag/
+│   │   ├── pipeline.py            # Full RAG orchestration
+│   │   ├── retriever.py           # Vector search
+│   │   ├── reranker.py            # LLM-based reranking
+│   │   └── guardrails.py          # Scope + injection checks
+│   └── vectorstore/
+│       └── qdrant_client.py
+├── alembic/                       # Database migrations
+├── scripts/
+│   └── ingest.py                  # Seed data ingestion script
+├── tests/                         # Pytest test suite
+├── data/raw/                      # Seed market documents
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+└── .env.example
+```
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- Python 3.9+
-- Poetry (for dependency management)
+- An Azure OpenAI resource with:
+  - `text-embedding-3-small` deployment
+  - `gpt-4o` deployment
 
-### Running Locally
+### 1. Clone and configure
 
 ```bash
-# Start the services
-docker-compose up -d
-
-# Install dependencies
-poetry install
-
-# Run the application
-poetry run python -m app.main
+git clone <repo-url>
+cd us-market-advisory-copilot
+cp .env.example .env
+# Fill in your Azure OpenAI credentials in .env
 ```
 
-### API Endpoints
+### 2. Start services
 
-- `GET /health` - Health check endpoint
-- `POST /v1/query` - Main query endpoint for RAG system
-- `POST /v1/ingest` - Protected ingestion endpoint
+```bash
+docker-compose up -d --build
+```
 
-## Data Sources
+### 3. Run initial ingestion
 
-The system integrates three primary data lanes:
+```bash
+docker-compose exec api bash -c "PYTHONPATH=/app python3 scripts/ingest.py"
+```
 
-### A) Stock Market Trends (US Equities)
+### 4. Query the API
 
-- Daily prices, volume, index constituents (S&P 500, Nasdaq, ETF series)
-- Corporate actions and announcements
+```bash
+curl -X POST http://localhost:8000/v1/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-api-key" \
+  -d '{"query": "What is the outlook for US equity markets?", "top_k": 5}'
+```
 
-### B) GDP + Macro Data (FRED, BEA, BLS)
+---
 
-- GDP (nominal/real), CPI, interest rates, labor and inflation indicators
+## API Reference
 
-### C) Financial Regulations (SEC, Federal Register)
+### `GET /health`
 
-- Filings, rule updates, regulatory notices, amendments, dates, applicability
+Returns system health including database and vector store connectivity.
 
-## Contributing
+### `POST /v1/query`
 
-Please read our contributing guidelines before submitting pull requests.
+```json
+{
+  "query": "string",
+  "lane_hint": "stocks | macro | regulation (optional)",
+  "top_k": 8,
+  "include_citations": true
+}
+```
+
+Response:
+```json
+{
+  "answer": "string",
+  "citations": [
+    {
+      "source_title": "string",
+      "source_url": "string",
+      "chunk_id": "string",
+      "quote": "string"
+    }
+  ],
+  "metadata": {
+    "retrieval_k": 8,
+    "reranked_k": 3,
+    "latency_ms": 1240.5,
+    "query_log_id": 42
+  }
+}
+```
+
+### `POST /v1/ingest`
+
+Protected endpoint for ingesting new documents.
+
+```json
+{
+  "lane": "stocks | macro | regulation",
+  "documents": [
+    {
+      "source_name": "string",
+      "title": "string",
+      "raw_text": "string"
+    }
+  ]
+}
+```
+
+---
+
+## Environment Variables
+
+See `.env.example` for the full list. Key variables:
+
+| Variable | Description |
+|---|---|
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint URL |
+| `AZURE_EMBEDDING_DEPLOYMENT` | Embedding model deployment name |
+| `AZURE_CHAT_DEPLOYMENT` | Chat model deployment name |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `QDRANT_URL` | Qdrant vector store URL |
+| `API_KEY` | Bearer token for API authentication |
+
+---
+
+## Database Schema
+
+| Table | Purpose |
+|---|---|
+| `documents` | Raw ingested documents with metadata |
+| `chunks` | Text chunks with Qdrant point IDs |
+| `ingestion_runs` | Audit log of ingestion jobs |
+| `query_logs` | Every query with answer, latency, retrieval stats |
+
+Migrations managed with Alembic:
+```bash
+docker-compose exec api bash -c "cd /app && alembic upgrade head"
+```
+
+---
+
+## Running Tests
+
+```bash
+docker-compose exec api bash -c "cd /app && python -m pytest tests/ -v"
+```
+
+---
+
+## CI/CD
+
+GitHub Actions runs the full test suite on every push to `main` and `develop`, and on all pull requests. See `.github/workflows/ci.yml`.
+
+Add these secrets to your GitHub repository:
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_ENDPOINT`

@@ -55,6 +55,18 @@ services:
       timeout: 5s
       retries: 5
 
+  frontend:
+    image: python:3.11-slim
+    working_dir: /app
+    command: bash -c "pip install -q streamlit requests && streamlit run app.py --server.port=8501 --server.address=0.0.0.0"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   qdrant_data:

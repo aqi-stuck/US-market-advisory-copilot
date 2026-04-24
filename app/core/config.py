@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_VERSION: str = "2024-02-01"
     AZURE_EMBEDDING_DEPLOYMENT: str = "text-embedding-3-small"
     EMBEDDING_DIMENSIONS: int = 1536
+    AZURE_CHAT_DEPLOYMENT: str = "gpt-4o-mini"
+    GITHUB_TOKEN: Optional[str] = None
 
 
     # Database settings
