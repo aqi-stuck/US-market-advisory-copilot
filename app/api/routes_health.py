@@ -34,7 +34,9 @@ async def health_check():
     try:
         qdrant_url = settings.QDRANT_URL.rstrip("/")
         if not qdrant_url.startswith("http"):
-            qdrant_url = f"http://{qdrant_url}"
+            # Default to https for cloud endpoints (e.g., .qdrant.io)
+            protocol = "https" if ".qdrant.io" in qdrant_url else "http"
+            qdrant_url = f"{protocol}://{qdrant_url}"
 
         headers = {}
         if settings.QDRANT_API_KEY:
