@@ -62,7 +62,8 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    configuration = config.get_section(config.config_ini_section, {})
+    section = config.get_section(config.config_ini_section)
+    configuration = dict(section) if section else {}
     url = os.environ.get("DATABASE_URL", configuration.get("sqlalchemy.url"))
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)

@@ -15,6 +15,9 @@ Do not speculate beyond what the context supports."""
 
 
 def _get_client() -> AzureOpenAI:
+    """
+    Initializes the Azure OpenAI client using settings.
+    """
     return AzureOpenAI(
         azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
         api_key=settings.AZURE_OPENAI_API_KEY,
