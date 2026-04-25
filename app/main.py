@@ -10,12 +10,14 @@ import time
 import logging
 from fastapi import Request
 from app.core.logging import setup_logging
+
 setup_logging()
 logger = logging.getLogger("app")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)
     yield
 
 
@@ -26,26 +28,32 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 @app.get("/")
 async def root():
     return {
         "message": f"Welcome to {settings.PROJECT_NAME}",
         "version": settings.VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
     }
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
     latency = round((time.perf_counter() - start) * 1000, 2)
-    logger.info("request", extra={
-        "method": request.method,
-        "path": request.url.path,
-        "status": response.status_code,
-        "latency_ms": latency,
-    })
+    logger.info(
+        "request",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status": response.status_code,
+            "latency_ms": latency,
+        },
+    )
     return response
+
 
 app.include_router(health_router, tags=["health"])
 app.include_router(query_router, prefix=settings.API_V1_STR, tags=["query"])

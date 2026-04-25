@@ -16,11 +16,13 @@ services:
         value: 8000
       - key: QDRANT_URL
         sync: false # Set this in the Render Dashboard
+      - key: QDRANT_API_KEY
+        sync: false # Set this in the Render Dashboard if your Qdrant instance is protected
       - key: GITHUB_TOKEN
         sync: false # Your API key for GitHub Models
       - key: GITHUB_MODELS_BASE_URL
         value: https://models.inference.ai.azure.com
-      - key: CHAT_MODEL_NAME # Renamed to GITHUB_CHAT_MODEL_NAME in config, but Render uses this for the env var
+      - key: GITHUB_CHAT_MODEL_NAME
         value: gpt-4o-mini
       - key: AZURE_OPENAI_API_KEY
         sync: false # Your API key for Azure OpenAI (for embeddings)

@@ -29,8 +29,6 @@ def run_pipeline(
         return refusal, [], 0, 0
 
     # 2. Retrieve
-    chunks = retrieve_chunks(query=query, top_k=top_k, lane_hint=lane_hint)
-    retrieved_k = len(chunks)
     try:
         chunks = retrieve_chunks(query=query, top_k=top_k, lane_hint=lane_hint)
         retrieved_k = len(chunks)
@@ -39,12 +37,7 @@ def run_pipeline(
     except Exception as e:
         return f"Retrieval failed: {str(e)}", [], 0, 0
 
-    if not chunks:
-        return "No relevant market context was found for your query.", [], 0, 0
-
     # 3. Rerank
-    reranked = rerank_chunks(query=query, chunks=chunks, top_k=rerank_k)
-    reranked_k = len(reranked)
     try:
         reranked = rerank_chunks(query=query, chunks=chunks, top_k=rerank_k)
         reranked_k = len(reranked)

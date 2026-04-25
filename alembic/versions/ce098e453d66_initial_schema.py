@@ -61,7 +61,16 @@ def upgrade() -> None:
     op.create_table(
         "query_logs",
         sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("question", sa.Text(), nullable=True),
+        sa.Column("answer", sa.Text(), nullable=True),
+        sa.Column("lane_hint", sa.String(), nullable=True),
+        sa.Column("retrieval_k", sa.Integer(), nullable=True),
+        sa.Column("reranked_k", sa.Integer(), nullable=True),
+        sa.Column("latency_ms", sa.Float(), nullable=True),
         sa.Column("metadata", sa.JSON(), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 

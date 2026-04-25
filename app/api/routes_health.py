@@ -36,7 +36,11 @@ async def health_check():
         if not qdrant_url.startswith("http"):
             qdrant_url = f"http://{qdrant_url}"
 
-        response = requests.get(f"{qdrant_url}/health", timeout=3)
+        headers = {}
+        if settings.QDRANT_API_KEY:
+            headers["api-key"] = settings.QDRANT_API_KEY
+
+        response = requests.get(f"{qdrant_url}/health", headers=headers, timeout=3)
         if response.status_code != 200:
             vectorstore_status = "error"
     except requests.RequestException:
