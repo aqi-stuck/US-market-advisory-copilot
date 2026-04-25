@@ -77,8 +77,8 @@ async def ingest_endpoint(
                 {
                     "id": point_id,
                     "vector": vector,
-                    "payload": {
-                        "text": chunk_str,
+                    "payload": {  # Standardize payload key for chunk text
+                        "chunk_text": chunk_str,
                         "document_id": doc.id,
                         "lane": doc.lane,
                     },
