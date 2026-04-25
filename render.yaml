@@ -20,6 +20,8 @@ services:
         sync: false
       - key: AZURE_OPENAI_API_KEY
         sync: false
+      - key: API_KEY
+        sync: false
 
 databases:
   - name: market-advisory-db
