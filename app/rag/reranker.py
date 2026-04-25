@@ -26,9 +26,12 @@ def rerank_chunks(
     if not chunks:
         return chunks
 
-    client = _get_client()
-
     scored = []
+    try:
+        client = _get_client()
+    except Exception:
+        return chunks  # Fallback to original order if client fails
+
     for chunk in chunks:
         text = (chunk.get("chunk_text") or "").strip()
         if not text:

@@ -60,9 +60,8 @@ def run_pipeline(
     context = "\n\n".join(context_parts)
 
     # 5. Generate answer
-    client = _get_client()
-
     try:
+        client = _get_client()
         response = client.chat.completions.create(
             model=settings.AZURE_CHAT_DEPLOYMENT,
             messages=[
