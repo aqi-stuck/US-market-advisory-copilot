@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import os
 import asyncio
-from mcp import ClientSession
+from mcp.client.session import ClientSession
 from mcp.client.sse import sse_client
 
 
