@@ -20,7 +20,6 @@ services:
         sync: false
       - key: AZURE_OPENAI_API_KEY
         sync: false
-    startCommand: "sh -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT'"
 
 databases:
   - name: market-advisory-db
