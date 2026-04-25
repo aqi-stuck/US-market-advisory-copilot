@@ -4,12 +4,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+import logging
 from app.core.config import settings
 from app.data.preprocess.chunking import chunk_text
 from app.llm.embeddings import embed_text
 from app.db.models import Chunk, Document, IngestionRun
 from app.db.session import SessionLocal
 from app.vectorstore.qdrant_client import upsert_points
+
+logger = logging.getLogger(__name__)
 
 
 def parse_datetime(value: str | None):
@@ -46,9 +49,9 @@ def main() -> None:
     source_info = "Live API Feed"
     try:
         records = fetch_external_market_data()
-        print(f"Fetched {len(records)} live records.")
+        logger.info(f"Fetched {len(records)} live records.")
     except Exception as e:
-        print(f"Live fetch failed, falling back to seed file: {e}")
+        logger.warning(f"Live fetch failed, falling back to seed file: {e}")
         project_root = Path(__file__).resolve().parents[1]
         input_file = project_root / "data" / "raw" / "seed_market_docs.json"
         if input_file.exists():
@@ -140,9 +143,12 @@ def main() -> None:
         run.status = "completed"
         run.chunk_count = total_chunks
         db.commit()
-        print(f"Ingestion complete. documents={len(records)} chunks={total_chunks}")
+        logger.info(
+            f"Ingestion complete. documents={len(records)} chunks={total_chunks}"
+        )
 
     except Exception as exc:
+        logger.error(f"Ingestion failed: {exc}")
         run.status = "failed"
         run.details = {"error": str(exc)}
         db.commit()
