@@ -8,7 +8,9 @@ st.title("📈 US Market Advisory Copilot")
 st.markdown("Ask questions about US equities, macroeconomics, or regulations.")
 
 # Configuration - these should be set in Streamlit Cloud Secrets
-API_BASE_URL = st.sidebar.text_input("API Base URL", value="https://your-render-app-name.onrender.com")
+API_BASE_URL = st.sidebar.text_input(
+    "API Base URL", value="https://your-render-app-name.onrender.com"
+)
 API_KEY = st.sidebar.text_input("API Key", type="password")
 
 if "messages" not in st.session_state:
@@ -34,24 +36,24 @@ if prompt := st.chat_input("What would you like to know?"):
             try:
                 headers = {"Authorization": f"Bearer {API_KEY}"}
                 payload = {"query": prompt, "top_k": 5}
-                response = requests.post(f"{API_BASE_URL}/v1/query", json=payload, headers=headers)
+                response = requests.post(
+                    f"{API_BASE_URL}/v1/query", json=payload, headers=headers
+                )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 answer = data["answer"]
                 citations = data.get("citations", [])
-                
+
                 st.markdown(answer)
                 if citations:
                     with st.expander("Sources"):
                         for cite in citations:
                             st.write(f"- **{cite['source_title']}**: {cite['quote']}")
-                
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": answer,
-                    "citations": citations
-                })
+
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": answer, "citations": citations}
+                )
             except Exception as e:
                 st.error(f"Error connecting to API: {str(e)}")
 
