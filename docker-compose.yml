@@ -39,7 +39,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    # - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Removed to prevent schema conflicts with Alembic
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d market_advisory_db"]
