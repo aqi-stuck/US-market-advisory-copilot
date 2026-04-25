@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List
 
 from app.core.config import settings
@@ -48,7 +49,9 @@ def rerank_chunks(
                 max_tokens=5,
                 temperature=0,
             )
-            score = float(response.choices[0].message.content.strip())
+            content = response.choices[0].message.content.strip()
+            match = re.search(r"([0-9]*\.?[0-9]+)", content)
+            score = float(match.group(1)) if match else 0.0
         except Exception:
             score = chunk.get("score", 0.0)
         scored.append((score, chunk))
