@@ -13,8 +13,10 @@ services:
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - API_KEY=${API_KEY}
     depends_on:
-      - postgres
-      - qdrant
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -70,7 +72,8 @@ services:
     volumes:
       - ./frontend:/app
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
 volumes:
   postgres_data:
