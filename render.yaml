@@ -33,6 +33,29 @@ services:
       - key: API_KEY
         sync: false
 
+  - type: cron
+    name: weekly-market-ingestion
+    runtime: docker
+    repo: https://github.com/aqi-stuck/US-market-advisory-copilot
+    plan: free
+    schedule: "0 0 * * 0" # Runs at midnight every Sunday
+    dockerCommand: "python scripts/ingest.py"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: market-advisory-db
+          property: connectionString
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+
 databases:
   - name: market-advisory-db
     databaseName: market_advisory

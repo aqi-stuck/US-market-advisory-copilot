@@ -31,7 +31,7 @@ def rerank_chunks(
             continue
         try:
             response = client.chat.completions.create(
-                model=settings.CHAT_MODEL_NAME,
+                model=settings.GITHUB_CHAT_MODEL_NAME,
                 messages=[
                     {
                         "role": "system",

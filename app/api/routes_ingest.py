@@ -38,6 +38,13 @@ async def ingest_endpoint(
 
     docs = []
     for item in (request.documents or []):
+        # Basic duplicate check by title and lane
+        existing = db.query(Document).filter(
+            Document.title == item.get("title"),
+            Document.lane == request.lane
+        ).first()
+        if existing: continue
+
         doc = Document(
             lane=request.lane,
             source_name=item.get("source_name"),
