@@ -1,6 +1,6 @@
 import json
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -34,7 +34,7 @@ def fetch_external_market_data() -> list:
             "title": f"Market Update - {datetime.now().strftime('%Y-%m-%d')}",
             "lane": "macro",
             "raw_text": "The latest macroeconomic data indicates a stabilizing trend in inflation...",
-            "published_at": datetime.utcnow().isoformat(),
+            "published_at": datetime.now(timezone.utc).isoformat(),
         }
     ]
 

@@ -39,7 +39,7 @@ services:
     repo: https://github.com/aqi-stuck/US-market-advisory-copilot
     plan: free
     schedule: "0 0 * * 0" # Runs at midnight every Sunday
-    dockerCommand: "python scripts/ingest.py"
+    dockerCommand: "python3 scripts/ingest.py"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
