@@ -1,14 +1,15 @@
 from typing import Any, Dict, List
 
-from openai import OpenAI
+from openai import AzureOpenAI
 
 from app.core.config import settings
 
 
-def _get_client() -> OpenAI:
-    return OpenAI(
-        base_url=settings.AZURE_OPENAI_ENDPOINT,  # Use the configured Azure endpoint
-        api_key=settings.AZURE_OPENAI_API_KEY,  # Use the dedicated Azure API key
+def _get_client() -> AzureOpenAI:
+    return AzureOpenAI(
+        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+        api_key=settings.AZURE_OPENAI_API_KEY,
+        api_version=settings.AZURE_OPENAI_API_VERSION,
     )
 
 

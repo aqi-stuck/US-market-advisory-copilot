@@ -1,7 +1,7 @@
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
-from typing import Optional
+from typing import Any, Optional
 
 
 class Settings(BaseSettings):

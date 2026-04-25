@@ -16,7 +16,11 @@ API_KEY = st.secrets.get("API_KEY", "")
 
 # If API_KEY is not set in secrets, allow user to input it in sidebar
 if not API_KEY:
-    API_KEY = st.sidebar.text_input("API Key", type="password")
+    API_KEY = st.sidebar.text_input(
+        "Enter API Bearer Token",
+        type="password",
+        help="The Bearer token configured in your backend Settings.",
+    )
 else:
     st.sidebar.success("API Key loaded from secrets.")
 
@@ -46,7 +50,7 @@ if prompt := st.chat_input("What would you like to know?"):
                     or API_BASE_URL == "https://your-render-app-name.onrender.com"
                 ):
                     st.error(
-                        "Please configure API Base URL and API Key in the sidebar or Streamlit secrets."
+                        "Configuration Missing: Please provide a valid API URL and Bearer Token in the sidebar or secrets.toml."
                     )
                     st.stop()  # Stop execution if critical config is missing
 

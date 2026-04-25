@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-from openai import OpenAI
+from openai import AzureOpenAI
 
 from app.core.config import settings
 from app.rag.guardrails import check_query
@@ -14,10 +14,11 @@ If the context does not contain enough information, say so clearly.
 Do not speculate beyond what the context supports."""
 
 
-def _get_client() -> OpenAI:
-    return OpenAI(
-        base_url=settings.AZURE_OPENAI_ENDPOINT,  # Use the configured Azure endpoint
-        api_key=settings.AZURE_OPENAI_API_KEY,  # Use the dedicated Azure API key
+def _get_client() -> AzureOpenAI:
+    return AzureOpenAI(
+        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+        api_key=settings.AZURE_OPENAI_API_KEY,
+        api_version=settings.AZURE_OPENAI_API_VERSION,
     )
 
 
