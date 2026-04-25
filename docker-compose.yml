@@ -24,7 +24,7 @@ services:
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -72,7 +72,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8501/_stcore/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8501/_stcore/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
