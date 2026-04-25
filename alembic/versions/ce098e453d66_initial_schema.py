@@ -24,8 +24,12 @@ def upgrade() -> None:
     op.create_table(
         "documents",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("source_name", sa.String(), nullable=True),
-        sa.Column("lane", sa.String(), nullable=True),
+        sa.Column("source_name", sa.String(length=100), nullable=False),
+        sa.Column("source_url", sa.String(length=500), nullable=True),
+        sa.Column("title", sa.String(length=255), nullable=False),
+        sa.Column("lane", sa.String(length=50), nullable=False),
+        sa.Column("published_at", sa.DateTime(), nullable=True),
+        sa.Column("raw_text", sa.Text(), nullable=True),
         sa.Column("metadata", sa.JSON(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -38,7 +42,10 @@ def upgrade() -> None:
         "chunks",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("document_id", sa.Integer(), nullable=True),
+        sa.Column("chunk_index", sa.Integer(), nullable=False),
         sa.Column("chunk_text", sa.Text(), nullable=True),
+        sa.Column("qdrant_point_id", sa.String(length=100), nullable=True),
+        sa.Column("embedding_model", sa.String(length=100), nullable=True),
         sa.Column("metadata", sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(
             ["document_id"],
@@ -50,8 +57,17 @@ def upgrade() -> None:
     op.create_table(
         "ingestion_runs",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("lane", sa.String(), nullable=True),
+        sa.Column("lane", sa.String(length=50), nullable=False),
+        sa.Column(
+            "status", sa.String(length=30), server_default="pending", nullable=False
+        ),
+        sa.Column("source_count", sa.Integer(), server_default="0", nullable=False),
+        sa.Column("chunk_count", sa.Integer(), server_default="0", nullable=False),
         sa.Column("details", sa.JSON(), nullable=True),
+        sa.Column(
+            "started_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
+        sa.Column("finished_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(

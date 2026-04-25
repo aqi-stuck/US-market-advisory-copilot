@@ -86,6 +86,7 @@ def main() -> None:
                 .first()
             )
             if existing:
+                logger.info(f"Skipping existing document: {row.get('title')}")
                 continue
 
             doc = Document(
@@ -139,7 +140,8 @@ def main() -> None:
 
             total_chunks += len(chunks)
 
-        upsert_points(qdrant_points)
+        if qdrant_points:
+            upsert_points(qdrant_points)
         run.status = "completed"
         run.chunk_count = total_chunks
         db.commit()
@@ -158,4 +160,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
+    # Ensure logs are visible in the terminal
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
     main()
