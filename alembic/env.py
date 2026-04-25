@@ -19,6 +19,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.db.session import Base
 from app.db import models  # noqa: F401
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -60,7 +61,10 @@ def run_migrations_online() -> None:
     """
     configuration = config.get_section(config.config_ini_section, {})
     if "DATABASE_URL" in os.environ:
-        configuration["sqlalchemy.url"] = os.environ.get("DATABASE_URL")
+        url = os.environ.get("DATABASE_URL")
+        if url and url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        configuration["sqlalchemy.url"] = url
 
     connectable = engine_from_config(
         configuration,

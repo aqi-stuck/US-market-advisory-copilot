@@ -5,6 +5,10 @@ dockerfilePath = "Dockerfile"
 [variables]
 DATABASE_URL = "${{Postgres.DATABASE_URL}}"
 QDRANT_URL = "${{Qdrant.QDRANT_URL}}"
+QDRANT_API_KEY = "${{Qdrant.QDRANT_API_KEY}}"
+GITHUB_TOKEN = "${{Secrets.GITHUB_TOKEN}}"
+AZURE_OPENAI_API_KEY = "${{Secrets.AZURE_OPENAI_API_KEY}}"
+AZURE_OPENAI_ENDPOINT = "${{Secrets.AZURE_OPENAI_ENDPOINT}}"
 ENVIRONMENT = "production"
 
 [deploy]
