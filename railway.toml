@@ -6,6 +6,7 @@ dockerfilePath = "Dockerfile"
 ENVIRONMENT = "production"
 # NOTE: DATABASE_URL, QDRANT_URL, and Secrets should be linked via the 
 # Railway Dashboard 'Variables' tab to avoid service name mismatch errors.
+DATABASE_URL = "${{Postgres.DATABASE_URL}}"
 
 [deploy]
 startCommand = "sh -c 'sleep 5 && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT'"
