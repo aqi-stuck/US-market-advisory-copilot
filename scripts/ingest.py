@@ -43,6 +43,7 @@ def main() -> None:
     # Logic: If running in production (Cron), try fetching live data.
     # Otherwise, fallback to the seed file.
     records = []
+    source_info = "Live API Feed"
     try:
         records = fetch_external_market_data()
         print(f"Fetched {len(records)} live records.")
@@ -53,6 +54,7 @@ def main() -> None:
         if input_file.exists():
             with input_file.open("r", encoding="utf-8") as f:
                 records = json.load(f)
+            source_info = str(input_file)
 
     db = SessionLocal()
     run = IngestionRun(
@@ -60,7 +62,7 @@ def main() -> None:
         status="running",
         source_count=len(records),
         chunk_count=0,
-        details={"source_file": str(input_file)},
+        details={"source_origin": source_info},
     )
     db.add(run)
     db.commit()

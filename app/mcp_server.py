@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.api.routes_ingest import ingest_endpoint
 from app.api.schemas import IngestRequest
+import asyncio
 from typing import Optional
 
 # Initialize FastMCP server
@@ -56,8 +57,14 @@ async def ingest_market_data(title: str, text: str, lane: str = "macro") -> str:
             documents=[{"title": title, "raw_text": text, "source_name": "MCP User"}],
         )
         # We reuse the logic from the API endpoint
-        result = await ingest_endpoint(request=request, db=db, api_key=settings.API_KEY)
-        return f"Successfully ingested document. Run ID: {result.details.get('ingestion_run_id')}"
+        try:
+            result = await ingest_endpoint(
+                request=request, db=db, api_key=settings.API_KEY
+            )
+            return f"Successfully ingested document. Run ID: {result.details.get('ingestion_run_id')}"
+        except Exception as api_err:
+            return f"API Ingestion Error: {str(api_err)}"
+
     except Exception as e:
         return f"Ingestion failed: {str(e)}"
     finally:
