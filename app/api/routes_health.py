@@ -51,7 +51,7 @@ async def health_check():
             error_details["vectorstore"] = (
                 f"Qdrant returned status {response.status_code}"
             )
-    except requests.RequestException as e:
+    except Exception as e:
         error_details["vectorstore"] = str(e)
         vectorstore_status = "error"
 

@@ -1,8 +1,9 @@
 import streamlit as st
 import requests
+import os
 
 # ── Config ────────────────────────────────────────────────────────────────────
-API_URL = st.secrets.get("API_URL", "http://localhost:8000")
+API_URL = os.environ.get("API_URL", st.secrets.get("API_URL", "http://localhost:8000"))
 API_KEY = st.secrets.get("API_KEY", "change-me")
 
 HEADERS = {
@@ -10,7 +11,12 @@ HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
 }
 
-LANES = {"All lanes": None, "Stocks": "stocks", "Macro": "macro", "Regulation": "regulation"}
+LANES = {
+    "All lanes": None,
+    "Stocks": "stocks",
+    "Macro": "macro",
+    "Regulation": "regulation",
+}
 
 # ── Page setup ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -20,7 +26,9 @@ st.set_page_config(
 )
 
 st.title("📈 US Market Advisory")
-st.caption("Ask questions about US equities, macroeconomic indicators, and financial regulations.")
+st.caption(
+    "Ask questions about US equities, macroeconomic indicators, and financial regulations."
+)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -97,12 +105,14 @@ if query:
                 if show_metadata:
                     st.json(metadata)
 
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "citations": citations if show_citations else [],
-                    "metadata": metadata,
-                })
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                        "citations": citations if show_citations else [],
+                        "metadata": metadata,
+                    }
+                )
 
             except requests.exceptions.Timeout:
                 st.error("Request timed out. The model is taking too long — try again.")
