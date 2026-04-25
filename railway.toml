@@ -4,8 +4,6 @@ dockerfilePath = "Dockerfile"
 
 [variables]
 ENVIRONMENT = "production"
-# NOTE: DATABASE_URL, QDRANT_URL, and Secrets should be linked via the 
-# Railway Dashboard 'Variables' tab to avoid service name mismatch errors.
 DATABASE_URL = "${{Postgres.DATABASE_URL}}"
 
 [deploy]
