@@ -21,9 +21,16 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def validate_db_url(cls, v: Any) -> Any:
-        if isinstance(v, str) and v.startswith("postgres://"):
-            v = v.replace("postgres://", "postgresql://", 1)
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql://", 1)
         return v
+
+    @field_validator("QDRANT_URL", mode="before")
+    @classmethod
+    def validate_qdrant_url(cls, v: Any) -> Any:
+        return v.strip() if isinstance(v, str) else v
 
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: Optional[str] = None
