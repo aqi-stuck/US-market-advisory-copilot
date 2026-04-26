@@ -36,6 +36,8 @@ def fetch_external_market_data() -> list:
                 "CPIAUCSL": "Consumer Price Index (Inflation)",
                 "UNRATE": "Unemployment Rate",
                 "FEDFUNDS": "Effective Federal Funds Rate",
+                "WALCL": "Federal Reserve Total Assets (Balance Sheet)",
+                "T10Y2Y": "10-Year Treasury Constant Maturity Minus 2-Year Treasury (Yield Curve)",
             }
             for series_id, label in series_map.items():
                 url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={fred_key}&file_type=json&limit=1&sort_order=desc"
@@ -50,7 +52,12 @@ def fetch_external_market_data() -> list:
                                 "source_url": f"https://fred.stlouisfed.org/series/{series_id}",
                                 "title": f"Macro Indicator: {label} - {latest['date']}",
                                 "lane": "macro",
-                                "raw_text": f"The latest value for {label} is {latest['value']} as of {latest['date']}.",
+                                "raw_text": (
+                                    f"Macroeconomic report for {label}. "
+                                    f"As of {latest['date']}, the reported value for {label} (Series ID: {series_id}) is {latest['value']}. "
+                                    f"This indicator is a key component of US macroeconomic analysis, specifically focused on {label.lower()}. "
+                                    f"The data is sourced from the St. Louis Fed (FRED) database."
+                                ),
                                 "published_at": latest["date"],
                             }
                         )
@@ -170,12 +177,13 @@ def main() -> None:
     try:
         for row in records:
             title = row.get("title", "untitled")
+            incoming_lane = row.get("lane", "macro")
 
             existing = (
                 db.query(Document)
                 .filter(
                     Document.title == title,
-                    Document.lane == row.get("lane", "macro"),
+                    Document.lane == incoming_lane,
                 )
                 .first()
             )
