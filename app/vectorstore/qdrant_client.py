@@ -1,10 +1,18 @@
-from typing import Any, Dict, List
+import logging
+from typing import Any, Dict, List, Optional
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
 QDRANT_COLLECTION = "market_chunks"
 
 
@@ -12,6 +20,14 @@ def get_qdrant_client() -> QdrantClient:
     return QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
 
 
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(Exception),
+    before_sleep=lambda retry_state: logger.info(
+        f"Retrying Qdrant connection... attempt {retry_state.attempt_number}"
+    ),
+)
 def ensure_collection(vector_size: int = 1536) -> None:
     client = get_qdrant_client()
     collections = client.get_collections().collections
