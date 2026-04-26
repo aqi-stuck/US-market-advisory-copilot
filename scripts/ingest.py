@@ -134,27 +134,24 @@ def main() -> None:
 
     try:
         for row in records:
-            raw_title = row.get("title", "untitled")
-            truncated_title = raw_title[:255]
+            title = row.get("title", "untitled")
 
             existing = (
                 db.query(Document)
                 .filter(
-                    Document.title == truncated_title,
+                    Document.title == title,
                     Document.lane == row.get("lane", "macro"),
                 )
                 .first()
             )
             if existing:
-                logger.info(f"Skipping existing document: {truncated_title}")
+                logger.info(f"Skipping existing document: {row.get('title')}")
                 continue
 
             doc = Document(
-                source_name=row.get("source_name", "unknown")[:100],
-                source_url=(
-                    row.get("source_url")[:500] if row.get("source_url") else None
-                ),
-                title=truncated_title,
+                source_name=row.get("source_name", "unknown"),
+                source_url=row.get("source_url"),
+                title=title,
                 lane=row.get("lane", "macro"),
                 published_at=parse_datetime(row.get("published_at")),
                 raw_text=row.get("raw_text", ""),
