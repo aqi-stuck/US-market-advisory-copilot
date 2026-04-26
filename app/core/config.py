@@ -25,7 +25,7 @@ class Settings(BaseSettings):
             v = v.replace("postgres://", "postgresql://", 1)
         return v
 
-    QDRANT_URL: str = "qdrant"
+    QDRANT_URL: str = "http://qdrant:6333"
     QDRANT_API_KEY: Optional[str] = None
     API_V1_STR: str = "/v1"
     DEBUG: bool = False
