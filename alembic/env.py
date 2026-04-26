@@ -40,7 +40,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    raw_url = os.environ.get("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    url = raw_url.strip().replace("\n", "").replace("\r", "") if raw_url else None
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
 
@@ -64,7 +65,8 @@ def run_migrations_online() -> None:
     """
     section = config.get_section(config.config_ini_section)
     configuration = dict(section) if section else {}
-    url = os.environ.get("DATABASE_URL", configuration.get("sqlalchemy.url"))
+    raw_url = os.environ.get("DATABASE_URL", configuration.get("sqlalchemy.url"))
+    url = raw_url.strip().replace("\n", "").replace("\r", "") if raw_url else None
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
     configuration["sqlalchemy.url"] = url
