@@ -19,7 +19,7 @@ services:
       postgres:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -56,6 +56,11 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build:

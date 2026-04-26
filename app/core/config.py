@@ -23,7 +23,14 @@ class Settings(BaseSettings):
     @classmethod
     def fix_postgres_prefix(cls, v: Any) -> Any:
         if isinstance(v, str) and v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql://", 1)
+            return v.replace("postgres://", "postgresql://", 1).strip()
+        return v.strip() if isinstance(v, str) else v
+
+    @field_validator("QDRANT_URL", mode="before")
+    @classmethod
+    def clean_qdrant_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip()
         return v
 
     QDRANT_URL: str = "http://qdrant:6333"
