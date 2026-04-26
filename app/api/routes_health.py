@@ -39,7 +39,7 @@ async def health_check(response: Response):
         if settings.QDRANT_API_KEY:
             headers["api-key"] = settings.QDRANT_API_KEY
 
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             q_resp = await client.get(f"{qdrant_url}/healthz", headers=headers)
             if q_resp.status_code != 200:
                 vectorstore_status = "error"
@@ -47,7 +47,7 @@ async def health_check(response: Response):
     except Exception as e:
         vectorstore_status = "error"
         error_details["vectorstore"] = f"Check failed: {str(e)}"
-        logger.warning(f"Health check: Vectorstore connectivity issue: {e}")
+        logger.warning(f"Health check: Vectorstore not ready or unreachable: {e}")
 
     details = {
         "database": db_status,
