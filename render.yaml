@@ -4,7 +4,7 @@ services:
     runtime: docker
     repo: https://github.com/aqi-stuck/US-market-advisory-copilot
     plan: free
-    region: oregon # Choose your preferred region
+    region: oregon
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,19 +15,19 @@ services:
       - key: PORT
         value: 8000
       - key: QDRANT_URL
-        sync: false # Set this in the Render Dashboard
+        sync: false
       - key: QDRANT_API_KEY
-        sync: false # Set this in the Render Dashboard if your Qdrant instance is protected
+        sync: false
       - key: GITHUB_TOKEN
-        sync: false # Your API key for GitHub Models
+        sync: false
       - key: GITHUB_MODELS_BASE_URL
         value: https://models.inference.ai.azure.com
       - key: GITHUB_CHAT_MODEL_NAME
         value: gpt-4o-mini
       - key: AZURE_OPENAI_API_KEY
-        sync: false # Your API key for Azure OpenAI (for embeddings)
+        sync: false
       - key: AZURE_OPENAI_ENDPOINT
-        sync: false # Your Azure OpenAI endpoint (for embeddings)
+        sync: false
       - key: AZURE_OPENAI_API_VERSION
         value: 2024-02-01
       - key: API_KEY
@@ -38,7 +38,7 @@ services:
     runtime: docker
     repo: https://github.com/aqi-stuck/US-market-advisory-copilot
     plan: free
-    schedule: "0 0 * * 0" # Runs at midnight every Sunday
+    schedule: "0 0 * * 0"
     dockerCommand: "python3 scripts/ingest.py"
     envVars:
       - key: DATABASE_URL
