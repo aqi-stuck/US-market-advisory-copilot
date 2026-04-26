@@ -14,6 +14,7 @@ def load_config(key, default):
 
 API_URL = load_config("API_URL", "http://localhost:8000")
 API_KEY = load_config("API_KEY", "change-me")
+REQUEST_TIMEOUT_SECONDS = float(load_config("REQUEST_TIMEOUT_SECONDS", "300"))
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -87,7 +88,7 @@ if query:
                         "top_k": top_k,
                         "include_citations": show_citations,
                     },
-                    timeout=120,
+                    timeout=REQUEST_TIMEOUT_SECONDS,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -120,7 +121,9 @@ if query:
                 )
 
             except requests.exceptions.Timeout:
-                st.error("Request timed out. The model is taking too long — try again.")
+                st.error(
+                    f"Request timed out after {int(REQUEST_TIMEOUT_SECONDS)}s. The model may still be processing; try again with a shorter query."
+                )
             except requests.exceptions.ConnectionError:
                 st.error("Cannot connect to the API. Make sure the backend is running.")
             except Exception as e:
