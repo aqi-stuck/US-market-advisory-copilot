@@ -57,7 +57,10 @@ if prompt := st.chat_input("What would you like to know?"):
                 headers = {"Authorization": f"Bearer {API_KEY}"}
                 payload = {"query": prompt, "top_k": 5}
                 response = requests.post(
-                    f"{API_BASE_URL}/v1/query", json=payload, headers=headers
+                    f"{API_BASE_URL}/v1/query",
+                    json=payload,
+                    headers=headers,
+                    timeout=90,
                 )
                 response.raise_for_status()
                 data = response.json()

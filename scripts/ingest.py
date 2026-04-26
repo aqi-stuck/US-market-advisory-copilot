@@ -194,7 +194,7 @@ def main() -> None:
             doc = Document(
                 source_name=row.get("source_name", "unknown")[:255],
                 source_url=(
-                    row.get("source_url")[:512] if row.get("source_url") else None
+                    row.get("source_url")[:255] if row.get("source_url") else None
                 ),
                 title=title[:255],
                 lane=row.get("lane", "macro")[:50],
