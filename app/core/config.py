@@ -21,10 +21,10 @@ class Settings(BaseSettings):
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    def fix_postgres_prefix(cls, v: Any) -> Any:
+    def validate_db_url(cls, v: Any) -> Any:
         if isinstance(v, str) and v.startswith("postgres://"):
             return v.replace("postgres://", "postgresql://", 1).strip()
-        return v.strip() if isinstance(v, str) else v
+        return v.strip() if v and isinstance(v, str) else v
 
     @field_validator("QDRANT_URL", mode="before")
     @classmethod
