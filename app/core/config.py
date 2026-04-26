@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     GITHUB_MODELS_BASE_URL: str = "https://models.inference.ai.azure.com"
     EMBEDDING_DIMENSIONS: int = 1536
     GITHUB_CHAT_MODEL_NAME: str = "gpt-4o-mini"
+    GITHUB_CHAT_FALLBACK_MODELS: Optional[str] = ""
     GITHUB_TOKEN: Optional[str] = None
     DATABASE_URL: str = "postgresql://user:password@postgres:5432/market_advisory_db"
     FRED_API_KEY: Optional[str] = None
