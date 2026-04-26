@@ -28,6 +28,7 @@ class Settings(BaseSettings):
                 .replace("postgres://", "postgresql://", 1)
                 .replace("\n", "")
                 .replace("\r", "")
+                .strip()
             )
         return v
 
@@ -35,7 +36,7 @@ class Settings(BaseSettings):
     @classmethod
     def validate_qdrant_url(cls, v: Any) -> Any:
         if isinstance(v, str):
-            return v.strip().rstrip("/").replace("\n", "").replace("\r", "")
+            return v.strip().rstrip("/").replace("\n", "").replace("\r", "").strip()
         return v
 
     QDRANT_URL: str = "http://qdrant:6333"
