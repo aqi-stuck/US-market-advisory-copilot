@@ -59,8 +59,9 @@ async def health_debug():
         selected = [c for c in base_cols + optional_cols if c in column_names]
 
         if selected:
+            order_col = "started_at" if "started_at" in column_names else "id"
             query = text(
-                f"SELECT {', '.join(selected)} FROM ingestion_runs ORDER BY started_at DESC LIMIT 1"
+                f"SELECT {', '.join(selected)} FROM ingestion_runs ORDER BY {order_col} DESC LIMIT 1"
             )
             latest_run = db.execute(query).mappings().first()
             if latest_run:
