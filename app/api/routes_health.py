@@ -5,6 +5,9 @@ from pydantic import BaseModel
 from typing import Optional
 from app.core.config import settings
 from sqlalchemy import text
+from app.db.models import IngestionRun
+from app.db.session import SessionLocal
+from app.vectorstore.qdrant_client import QDRANT_COLLECTION, get_qdrant_client
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +18,75 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     details: Optional[dict] = None
+
+
+@router.get("/health/debug")
+async def health_debug():
+    db = SessionLocal()
+    payload = {
+        "status": "ok",
+        "version": settings.VERSION,
+        "database": {},
+        "vectorstore": {},
+        "ingestion": {},
+        "errors": {},
+    }
+
+    try:
+        payload["database"]["documents"] = db.execute(
+            text("SELECT COUNT(1) FROM documents")
+        ).scalar_one()
+        payload["database"]["chunks"] = db.execute(
+            text("SELECT COUNT(1) FROM chunks")
+        ).scalar_one()
+        payload["database"]["query_logs"] = db.execute(
+            text("SELECT COUNT(1) FROM query_logs")
+        ).scalar_one()
+
+        latest_run = (
+            db.query(IngestionRun).order_by(IngestionRun.started_at.desc()).first()
+        )
+        payload["ingestion"]["latest"] = (
+            {
+                "id": latest_run.id,
+                "status": latest_run.status,
+                "lane": latest_run.lane,
+                "source_count": latest_run.source_count,
+                "chunk_count": latest_run.chunk_count,
+                "started_at": (
+                    latest_run.started_at.isoformat() if latest_run.started_at else None
+                ),
+                "finished_at": (
+                    latest_run.finished_at.isoformat()
+                    if latest_run.finished_at
+                    else None
+                ),
+            }
+            if latest_run
+            else None
+        )
+    except Exception as exc:
+        payload["status"] = "degraded"
+        payload["errors"]["database"] = str(exc)
+
+    try:
+        client = get_qdrant_client()
+        exists = client.collection_exists(QDRANT_COLLECTION)
+        payload["vectorstore"]["collection_exists"] = exists
+        if exists:
+            info = client.get_collection(QDRANT_COLLECTION)
+            payload["vectorstore"]["collection"] = QDRANT_COLLECTION
+            payload["vectorstore"]["points_count"] = info.points_count
+            payload["vectorstore"]["indexed_vectors_count"] = info.indexed_vectors_count
+    except Exception as exc:
+        payload["status"] = "degraded"
+        payload["errors"]["vectorstore"] = str(exc)
+
+    if not payload["errors"]:
+        payload["errors"] = None
+
+    db.close()
+    return payload
 
 
 @router.get("/health", response_model=HealthResponse)

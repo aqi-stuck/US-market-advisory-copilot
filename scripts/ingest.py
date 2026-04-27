@@ -14,6 +14,15 @@ from app.vectorstore.qdrant_client import upsert_points
 
 logger = logging.getLogger(__name__)
 
+LOW_VALUE_CONTENT = {
+    "no content available.",
+    "no content available",
+    "n/a",
+    "null",
+    "none",
+    "",
+}
+
 
 def parse_datetime(value: str | None):
     if not value:
@@ -22,6 +31,16 @@ def parse_datetime(value: str | None):
         return datetime.fromisoformat(value)
     except ValueError:
         return None
+
+
+def has_meaningful_content(raw_text: str | None) -> bool:
+    if raw_text is None:
+        return False
+    cleaned = raw_text.strip().lower()
+    if cleaned in LOW_VALUE_CONTENT:
+        return False
+    # Avoid embedding very short low-signal snippets.
+    return len(cleaned) >= 40
 
 
 def fetch_external_market_data() -> list:
@@ -178,6 +197,11 @@ def main() -> None:
         for row in records:
             title = row.get("title", "untitled")
             incoming_lane = row.get("lane", "macro")
+            raw_text = row.get("raw_text", "")
+
+            if not has_meaningful_content(raw_text):
+                logger.info(f"Skipping low-value document content: {title}")
+                continue
 
             existing = (
                 db.query(Document)
@@ -199,7 +223,7 @@ def main() -> None:
                 title=title[:255],
                 lane=row.get("lane", "macro")[:50],
                 published_at=parse_datetime(row.get("published_at")),
-                raw_text=row.get("raw_text", ""),
+                raw_text=raw_text,
                 extra_metadata={"ingestion_run_id": run.id},
             )
             db.add(doc)
@@ -211,7 +235,16 @@ def main() -> None:
                 overlap=settings.CHUNK_OVERLAP,
             )
 
+            if not chunks:
+                logger.info(
+                    f"Skipping document with no chunks after preprocessing: {title}"
+                )
+                continue
+
             for idx, text_part in enumerate(chunks):
+                if not has_meaningful_content(text_part):
+                    continue
+
                 point_id = str(uuid4())
                 vector = embed_text(text_part)
 
