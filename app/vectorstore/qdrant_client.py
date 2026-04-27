@@ -50,13 +50,27 @@ def upsert_points(points: List[Dict[str, Any]]) -> None:
     )
 
 
-def search_similar(vector: List[float], limit: int = 5):
+def search_similar(
+    vector: List[float], limit: int = 5, lane_filter: Optional[str] = None
+):
     ensure_collection(vector_size=len(vector))
     client = get_qdrant_client()
+
+    query_filter = None
+    if lane_filter:
+        query_filter = models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="lane",
+                    match=models.MatchValue(value=lane_filter),
+                )
+            ]
+        )
 
     results = client.query_points(
         collection_name=QDRANT_COLLECTION,
         query=vector,
         limit=limit,
+        query_filter=query_filter,
     )
     return results.points

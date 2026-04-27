@@ -8,13 +8,15 @@ def retrieve_chunks(
     query: str, top_k: int = 5, lane_hint: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     vector = embed_text(query)
-    hits = search_similar(vector, limit=top_k)
+    hits = search_similar(vector, limit=top_k, lane_filter=lane_hint)
+
+    # If the selected lane has no semantic hits, retry across all lanes.
+    if lane_hint and not hits:
+        hits = search_similar(vector, limit=top_k)
 
     results: List[Dict[str, Any]] = []
     for hit in hits:
         payload = hit.payload or {}
-        if lane_hint and payload.get("lane") != lane_hint:
-            continue
 
         results.append(
             {
