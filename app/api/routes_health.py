@@ -78,6 +78,8 @@ async def health_debug():
     except Exception as exc:
         payload["status"] = "degraded"
         payload["errors"]["database"] = str(exc)
+    finally:
+        db.close()
 
     try:
         client = get_qdrant_client()
@@ -95,7 +97,6 @@ async def health_debug():
     if not payload["errors"]:
         payload["errors"] = None
 
-    db.close()
     return payload
 
 
