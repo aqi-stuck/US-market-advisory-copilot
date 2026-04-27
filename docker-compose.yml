@@ -86,6 +86,26 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  ingest-worker:
+    build: .
+    command: >
+      bash -c "echo 'Waiting for database...';
+      sleep 10;
+      while true; do
+        echo \"[$(date)] Starting scheduled daily ingestion...\";
+        PYTHONPATH=. python scripts/ingest.py;
+        echo \"[$(date)] Ingestion complete. Sleeping for 24 hours...\";
+        sleep 86400;
+      done"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/market_advisory_db
+      - QDRANT_URL=http://qdrant:6333
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+    depends_on:
+      api:
+        condition: service_healthy
 volumes:
   postgres_data:
   qdrant_data:
