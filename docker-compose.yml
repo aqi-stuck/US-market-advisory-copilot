@@ -89,23 +89,30 @@ services:
 
   ingest-worker:
     build: .
-    command: >
-      bash -c "echo 'Waiting for database...';
-      sleep 10;
-      while true; do
-        echo \"[$(date)] Starting scheduled daily ingestion...\";
-        PYTHONPATH=. python scripts/ingest.py;
-        echo \"[$(date)] Ingestion complete. Sleeping for 24 hours...\";
-        sleep 86400;
-      done"
+    command: python scripts/ingest.py
     environment:
       - DATABASE_URL=postgresql://user:password@postgres:5432/market_advisory_db
       - QDRANT_URL=http://qdrant:6333
+      - LOG_LEVEL=INFO
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - FRED_API_KEY=${FRED_API_KEY}
+      - GITHUB_CHAT_MODEL_NAME=${AZURE_CHAT_DEPLOYMENT:-gpt-4o-mini}
+      - GITHUB_CHAT_FALLBACK_MODELS=${GITHUB_CHAT_FALLBACK_MODELS:-gpt-4o-mini}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - API_KEY=${API_KEY}
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=.
     depends_on:
-      api:
+      postgres:
         condition: service_healthy
+      qdrant:
+        condition: service_started
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+
 volumes:
   postgres_data:
   qdrant_data:
