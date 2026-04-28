@@ -10,11 +10,13 @@ st.markdown("Ask questions about US equities, macroeconomics, or regulations.")
 # Configuration - these should be set in Streamlit Cloud Secrets
 # Use st.secrets to securely access variables from .streamlit/secrets.toml
 try:
-    API_BASE_URL = st.secrets.get("API_BASE_URL", "")
+    API_BASE_URL = st.secrets.get(
+        "API_BASE_URL", os.environ.get("API_URL", "http://localhost:8000")
+    )
     API_KEY = st.secrets.get("API_KEY", "")
 except Exception:
     # Fallback if st.secrets is not initialized (e.g., missing secrets.toml or Cloud config)
-    API_BASE_URL = ""
+    API_BASE_URL = os.environ.get("API_URL", "http://localhost:8000")
     API_KEY = ""
 
 # If API_KEY is not set in secrets, allow user to input it in sidebar
@@ -26,6 +28,8 @@ if not API_KEY:
     )
 else:
     st.sidebar.success("API Key loaded from secrets.")
+
+top_k = st.sidebar.slider("Results to retrieve", min_value=1, max_value=20, value=8)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -55,9 +59,12 @@ if prompt := st.chat_input("What would you like to know?"):
                     st.stop()  # Stop execution if critical config is missing
 
                 headers = {"Authorization": f"Bearer {API_KEY}"}
-                payload = {"query": prompt, "top_k": 5}
+                payload = {"query": prompt, "top_k": top_k}
                 response = requests.post(
-                    f"{API_BASE_URL}/v1/query", json=payload, headers=headers
+                    f"{API_BASE_URL}/v1/query",
+                    json=payload,
+                    headers=headers,
+                    timeout=120,
                 )
                 response.raise_for_status()
                 data = response.json()

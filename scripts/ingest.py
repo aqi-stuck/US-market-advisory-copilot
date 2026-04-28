@@ -14,6 +14,15 @@ from app.vectorstore.qdrant_client import upsert_points
 
 logger = logging.getLogger(__name__)
 
+LOW_VALUE_CONTENT = {
+    "no content available.",
+    "no content available",
+    "n/a",
+    "null",
+    "none",
+    "",
+}
+
 
 def parse_datetime(value: str | None):
     if not value:
@@ -24,32 +33,150 @@ def parse_datetime(value: str | None):
         return None
 
 
+def has_meaningful_content(raw_text: str | None) -> bool:
+    if raw_text is None:
+        return False
+    cleaned = raw_text.strip().lower()
+    if cleaned in LOW_VALUE_CONTENT:
+        return False
+    # Avoid embedding very short low-signal snippets.
+    return len(cleaned) >= 40
+
+
 def fetch_external_market_data() -> list:
-    return [
-        {
-            "source_name": "Live Feed",
-            "title": f"Market Update - {datetime.now().strftime('%Y-%m-%d')}",
-            "lane": "macro",
-            "raw_text": "The latest macroeconomic data indicates a stabilizing trend in inflation...",
-            "published_at": datetime.now(timezone.utc).isoformat(),
-        }
-    ]
+    fetched_docs = []
+
+    # 1. Macro Data (FRED)
+    try:
+        fred_key = getattr(settings, "FRED_API_KEY", None)
+        if fred_key:
+            series_map = {
+                "GDP": "Gross Domestic Product",
+                "CPIAUCSL": "Consumer Price Index (Inflation)",
+                "UNRATE": "Unemployment Rate",
+                "FEDFUNDS": "Effective Federal Funds Rate",
+                "WALCL": "Federal Reserve Total Assets (Balance Sheet)",
+                "T10Y2Y": "10-Year Treasury Constant Maturity Minus 2-Year Treasury (Yield Curve)",
+            }
+            for series_id, label in series_map.items():
+                url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={fred_key}&file_type=json&limit=1&sort_order=desc"
+                r = requests.get(url, timeout=10)
+                if r.status_code == 200:
+                    obs = r.json().get("observations", [])
+                    if obs:
+                        latest = obs[0]
+                        fetched_docs.append(
+                            {
+                                "source_name": "FRED",
+                                "source_url": f"https://fred.stlouisfed.org/series/{series_id}",
+                                "title": f"Macro Indicator: {label} - {latest['date']}",
+                                "lane": "macro",
+                                "raw_text": (
+                                    f"Macroeconomic report for {label}. "
+                                    f"As of {latest['date']}, the reported value for {label} (Series ID: {series_id}) is {latest['value']}. "
+                                    f"This indicator is a key component of US macroeconomic analysis, specifically focused on {label.lower()}. "
+                                    f"The data is sourced from the St. Louis Fed (FRED) database."
+                                ),
+                                "published_at": latest["date"],
+                            }
+                        )
+            logger.info(f"Fetched {len(series_map)} macro indicators from FRED.")
+        else:
+            logger.warning("FRED_API_KEY not set. Skipping live macro fetch.")
+    except Exception as e:
+        logger.error(f"FRED fetch failed: {e}")
+
+    # 2. Regulatory Data
+    try:
+        fed_reg_url = "https://www.federalregister.gov/api/v1/documents.json?conditions[agencies][]=securities-and-exchange-commission&per_page=5"
+        response = requests.get(fed_reg_url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            for item in data.get("results", []):
+                fetched_docs.append(
+                    {
+                        "source_name": "Federal Register",
+                        "source_url": item.get("html_url"),
+                        "title": item.get("title"),
+                        "lane": "regulation",
+                        "raw_text": item.get("abstract")
+                        or item.get("body", "No content available."),
+                        "published_at": item.get("publication_date"),
+                    }
+                )
+            logger.info(
+                f"Successfully fetched {len(data.get('results', []))} regulatory documents from Federal Register."
+            )
+    except Exception as e:
+        logger.error(f"Failed to fetch regulatory data: {e}")
+
+    # 3. Stock Data
+    try:
+        tickers = ["AAPL.US", "MSFT.US", "SPY.US", "QQQ.US", "DIA.US"]
+        for ticker in tickers:
+            stooq_url = f"https://stooq.com/q/l/?s={ticker}&f=sd2t2ohlcv&h&e=json"
+            resp = requests.get(stooq_url, timeout=20)
+            if resp.status_code == 200:
+                data = resp.json()
+                symbols = data.get("symbols", [])
+                if symbols:
+                    s = symbols[0]
+                    fetched_docs.append(
+                        {
+                            "source_name": "Stooq",
+                            "source_url": f"https://stooq.com/q/?s={ticker}",
+                            "title": f"Market Quote: {ticker} - {s.get('date')}",
+                            "lane": "stocks",
+                            "raw_text": (
+                                f"Market data for {ticker}. "
+                                f"Open: {s.get('open')}, High: {s.get('high')}, "
+                                f"Low: {s.get('low')}, Close: {s.get('close')}, "
+                                f"Volume: {s.get('volume')} as of {s.get('date')} {s.get('time')}."
+                            ),
+                            "published_at": (
+                                f"{s.get('date')}T{s.get('time')}"
+                                if s.get("date")
+                                else None
+                            ),
+                        }
+                    )
+        logger.info(f"Successfully fetched {len(tickers)} stock quotes from Stooq.")
+    except Exception as e:
+        logger.error(f"Failed to fetch stock data: {e}")
+
+    return fetched_docs
 
 
 def main() -> None:
     records = []
-    source_info = "Live API Feed"
+    project_root = Path(__file__).resolve().parents[1]
+    input_file = project_root / "data" / "raw" / "seed_market_docs.json"
+    source_info = ""
+
+    if input_file.exists():
+        with input_file.open("r", encoding="utf-8") as f:
+            records = json.load(f)
+        source_info = "Seed File"
+        logger.info(f"Loaded {len(records)} records from seed file: {input_file}")
+    else:
+        logger.warning(f"Seed file not found at {input_file}.")
+
     try:
-        records = fetch_external_market_data()
-        logger.info(f"Fetched {len(records)} live records.")
+        live_records = fetch_external_market_data()
+        if live_records:
+            records.extend(live_records)
+            source_info = (
+                f"{source_info} + Live API Feed" if source_info else "Live API Feed"
+            )
+            logger.info(f"Fetched {len(live_records)} live records.")
+        else:
+            logger.warning("Live fetch returned no records. No data to ingest.")
     except Exception as e:
-        logger.warning(f"Live fetch failed, falling back to seed file: {e}")
-        project_root = Path(__file__).resolve().parents[1]
-        input_file = project_root / "data" / "raw" / "seed_market_docs.json"
-        if input_file.exists():
-            with input_file.open("r", encoding="utf-8") as f:
-                records = json.load(f)
-            source_info = str(input_file)
+        logger.error(f"Error during ingestion process: {e}")
+
+    if not records:
+        logger.error("No records found for ingestion. Exiting.")
+        return
 
     db = SessionLocal()
     run = IngestionRun(
@@ -68,11 +195,19 @@ def main() -> None:
 
     try:
         for row in records:
+            title = row.get("title", "untitled")
+            incoming_lane = row.get("lane", "macro")
+            raw_text = row.get("raw_text", "")
+
+            if not has_meaningful_content(raw_text):
+                logger.info(f"Skipping low-value document content: {title}")
+                continue
+
             existing = (
                 db.query(Document)
                 .filter(
-                    Document.title == row.get("title"),
-                    Document.lane == row.get("lane", "macro"),
+                    Document.title == title,
+                    Document.lane == incoming_lane,
                 )
                 .first()
             )
@@ -81,12 +216,14 @@ def main() -> None:
                 continue
 
             doc = Document(
-                source_name=row.get("source_name", "unknown"),
-                source_url=row.get("source_url"),
-                title=row.get("title", "untitled"),
-                lane=row.get("lane", "macro"),
+                source_name=row.get("source_name", "unknown")[:255],
+                source_url=(
+                    row.get("source_url")[:255] if row.get("source_url") else None
+                ),
+                title=title[:255],
+                lane=row.get("lane", "macro")[:50],
                 published_at=parse_datetime(row.get("published_at")),
-                raw_text=row.get("raw_text", ""),
+                raw_text=raw_text,
                 extra_metadata={"ingestion_run_id": run.id},
             )
             db.add(doc)
@@ -98,7 +235,16 @@ def main() -> None:
                 overlap=settings.CHUNK_OVERLAP,
             )
 
+            if not chunks:
+                logger.info(
+                    f"Skipping document with no chunks after preprocessing: {title}"
+                )
+                continue
+
             for idx, text_part in enumerate(chunks):
+                if not has_meaningful_content(text_part):
+                    continue
+
                 point_id = str(uuid4())
                 vector = embed_text(text_part)
 
@@ -142,6 +288,7 @@ def main() -> None:
 
     except Exception as exc:
         logger.error(f"Ingestion failed: {exc}")
+        db.rollback()
         run.status = "failed"
         run.details = {"error": str(exc)}
         db.commit()

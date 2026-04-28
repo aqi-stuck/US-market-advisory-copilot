@@ -8,7 +8,9 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - LOG_LEVEL=INFO
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - FRED_API_KEY=${FRED_API_KEY}
       - GITHUB_CHAT_MODEL_NAME=${AZURE_CHAT_DEPLOYMENT:-gpt-4o-mini}
+      - GITHUB_CHAT_FALLBACK_MODELS=${GITHUB_CHAT_FALLBACK_MODELS:-gpt-4o-mini}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - API_KEY=${API_KEY}
@@ -24,11 +26,11 @@ services:
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
-      interval: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=10)"]
+      interval: 20s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 180s
 
   postgres:
     image: postgres:15-alpine
@@ -48,13 +50,18 @@ services:
       retries: 5
 
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.8.4
+    platform: linux/amd64
     ports:
       - "6333:6333"
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   frontend:
     build:
@@ -65,6 +72,7 @@ services:
     environment:
       - API_URL=http://api:8000
       - API_KEY=${API_KEY}
+      - REQUEST_TIMEOUT_SECONDS=${REQUEST_TIMEOUT_SECONDS:-300}
       - PYTHONUNBUFFERED=1
     volumes:
       - ./frontend:/app
@@ -73,11 +81,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8501/_stcore/health || exit 1"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=10)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  ingest-worker:
+    build: .
+    command: >
+      bash -c "echo 'Waiting for database...';
+      sleep 10;
+      while true; do
+        echo \"[$(date)] Starting scheduled daily ingestion...\";
+        PYTHONPATH=. python scripts/ingest.py;
+        echo \"[$(date)] Ingestion complete. Sleeping for 24 hours...\";
+        sleep 86400;
+      done"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/market_advisory_db
+      - QDRANT_URL=http://qdrant:6333
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+    depends_on:
+      api:
+        condition: service_healthy
 volumes:
   postgres_data:
   qdrant_data:

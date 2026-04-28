@@ -12,42 +12,43 @@ class Settings(BaseSettings):
     AZURE_OPENAI_ENDPOINT: Optional[str] = None
     AZURE_OPENAI_API_VERSION: str = "2024-02-01"
     AZURE_EMBEDDING_DEPLOYMENT: str = "text-embedding-3-small"
-    GITHUB_MODELS_BASE_URL: str = (
-        "https://models.inference.ai.azure.com"  # Endpoint for GitHub Models
-    )
+    GITHUB_MODELS_BASE_URL: str = "https://models.inference.ai.azure.com"
     EMBEDDING_DIMENSIONS: int = 1536
-    GITHUB_CHAT_MODEL_NAME: str = (
-        "gpt-4o-mini"  # Model name for chat (from GitHub Models)
-    )
+    GITHUB_CHAT_MODEL_NAME: str = "gpt-4o-mini"
+    GITHUB_CHAT_FALLBACK_MODELS: Optional[str] = ""
     GITHUB_TOKEN: Optional[str] = None
-
-    # Database settings
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/market_advisory_db"
+    DATABASE_URL: str = "postgresql://user:password@postgres:5432/market_advisory_db"
+    FRED_API_KEY: Optional[str] = None
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    def fix_postgres_prefix(cls, v: Any) -> Any:
-        if isinstance(v, str) and v.startswith("postgres://"):
-            return v.replace("postgres://", "postgresql://", 1)
+    def validate_db_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return (
+                v.strip()
+                .replace("postgres://", "postgresql://", 1)
+                .replace("\n", "")
+                .replace("\r", "")
+                .strip()
+            )
         return v
 
-    # Qdrant settings
-    QDRANT_URL: str = "http://localhost:6333"
-    QDRANT_API_KEY: Optional[str] = None
+    @field_validator("QDRANT_URL", mode="before")
+    @classmethod
+    def validate_qdrant_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip().rstrip("/").replace("\n", "").replace("\r", "").strip()
+        return v
 
-    # API settings
+    QDRANT_URL: str = "http://qdrant:6333"
+    QDRANT_API_KEY: Optional[str] = None
     API_V1_STR: str = "/v1"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "development"
-
-    # Security
     API_KEY: Optional[str] = None
-
-    # Data processing
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
-
     model_config = SettingsConfigDict(env_file=".env")
 
 
