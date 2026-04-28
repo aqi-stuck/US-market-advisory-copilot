@@ -1,0 +1,54 @@
+name: Weekly Market Data Ingest
+
+on:
+  schedule:
+    # Runs every Sunday at 00:00 UTC
+    - cron: "0 0 * * 0"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger external market data ingestion
+        run: |
+          API_URL="${{ secrets.INGEST_API_URL }}"
+          API_KEY="${{ secrets.INGEST_API_KEY }}"
+
+          if [ -z "$API_URL" ] || [ -z "$API_KEY" ]; then
+            echo "❌ Missing required secrets: INGEST_API_URL or INGEST_API_KEY"
+            exit 1
+          fi
+
+          echo "🚀 Triggering ingestion at $API_URL/api/ingest/trigger-external"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "$API_URL/api/ingest/trigger-external" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "📊 Response Status: $HTTP_CODE"
+          echo "📋 Response Body: $BODY"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Ingestion failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          # Parse result
+          STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
+          DOCS=$(echo "$BODY" | grep -o '"documents_processed":[0-9]*' | cut -d':' -f2)
+          CHUNKS=$(echo "$BODY" | grep -o '"chunks_created":[0-9]*' | cut -d':' -f2)
+
+          echo "✅ Ingest Status: $STATUS"
+          echo "📄 Documents: $DOCS"
+          echo "🔤 Chunks: $CHUNKS"
+
+          if [ "$STATUS" != "completed" ]; then
+            echo "⚠️ Ingestion status: $STATUS"
+            exit 1
+          fi

@@ -1,9 +1,10 @@
+"""External data ingestion pipeline."""
+
 import json
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
-
 import logging
 from app.core.config import settings
 from app.data.preprocess.chunking import chunk_text
@@ -39,11 +40,11 @@ def has_meaningful_content(raw_text: str | None) -> bool:
     cleaned = raw_text.strip().lower()
     if cleaned in LOW_VALUE_CONTENT:
         return False
-    # Avoid embedding very short low-signal snippets.
     return len(cleaned) >= 40
 
 
 def fetch_external_market_data() -> list:
+    """Fetch market data from external APIs."""
     fetched_docs = []
 
     # 1. Macro Data (FRED)
@@ -58,28 +59,33 @@ def fetch_external_market_data() -> list:
                 "WALCL": "Federal Reserve Total Assets (Balance Sheet)",
                 "T10Y2Y": "10-Year Treasury Constant Maturity Minus 2-Year Treasury (Yield Curve)",
             }
-            for series_id, label in series_map.items():
-                url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={fred_key}&file_type=json&limit=1&sort_order=desc"
-                r = requests.get(url, timeout=10)
-                if r.status_code == 200:
-                    obs = r.json().get("observations", [])
-                    if obs:
-                        latest = obs[0]
-                        fetched_docs.append(
-                            {
-                                "source_name": "FRED",
-                                "source_url": f"https://fred.stlouisfed.org/series/{series_id}",
-                                "title": f"Macro Indicator: {label} - {latest['date']}",
-                                "lane": "macro",
-                                "raw_text": (
-                                    f"Macroeconomic report for {label}. "
-                                    f"As of {latest['date']}, the reported value for {label} (Series ID: {series_id}) is {latest['value']}. "
-                                    f"This indicator is a key component of US macroeconomic analysis, specifically focused on {label.lower()}. "
-                                    f"The data is sourced from the St. Louis Fed (FRED) database."
-                                ),
-                                "published_at": latest["date"],
-                            }
-                        )
+            base_url = "https://api.stlouisfed.org/fred/series/observations"
+            for series_id, title in series_map.items():
+                try:
+                    params = {
+                        "series_id": series_id,
+                        "limit": 5,
+                        "sort_order": "desc",
+                        "api_key": fred_key,
+                    }
+                    response = requests.get(base_url, params=params, timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        observations = data.get("observations", [])
+                        if observations:
+                            latest = observations[0]
+                            fetched_docs.append(
+                                {
+                                    "source_name": "FRED (Federal Reserve Economic Data)",
+                                    "source_url": f"https://fred.stlouisfed.org/series/{series_id}",
+                                    "title": title,
+                                    "lane": "macro",
+                                    "raw_text": f"Macro Economic Indicator: {title}. Value: {latest.get('value')}, Date: {latest.get('date')}",
+                                    "published_at": latest["date"],
+                                }
+                            )
+                except Exception as e:
+                    logger.warning(f"Failed to fetch FRED series {series_id}: {e}")
             logger.info(f"Fetched {len(series_map)} macro indicators from FRED.")
         else:
             logger.warning("FRED_API_KEY not set. Skipping live macro fetch.")
@@ -148,12 +154,9 @@ def fetch_external_market_data() -> list:
 
 
 def run_external_ingestion() -> dict:
-    """
-    Run the full external data ingestion pipeline.
-    Returns a dict with ingestion status and counts.
-    """
+    """Run the full external data ingestion pipeline."""
     records = []
-    project_root = Path(__file__).resolve().parents[1]
+    project_root = Path(__file__).resolve().parents[2]  # Go up to project root
     input_file = project_root / "data" / "raw" / "seed_market_docs.json"
     source_info = ""
 
@@ -312,20 +315,3 @@ def run_external_ingestion() -> dict:
         return {"status": "failed", "error": str(exc), "documents": 0, "chunks": 0}
     finally:
         db.close()
-
-
-def main() -> None:
-    """CLI entrypoint for ingestion."""
-    result = run_external_ingestion()
-    logger.info(f"Ingestion result: {result}")
-
-
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
-    main()

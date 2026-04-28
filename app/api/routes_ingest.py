@@ -13,6 +13,7 @@ from app.llm.embeddings import embed_text
 from app.vectorstore.qdrant_client import upsert_points
 from app.core.config import settings
 from app.db.models import Chunk
+from app.rag.ingestion import run_external_ingestion
 
 router = APIRouter()
 
@@ -101,3 +102,20 @@ async def ingest_endpoint(
             "source_count": source_count,
         },
     )
+
+
+@router.post("/ingest/trigger-external")
+async def trigger_external_ingest(api_key: str = Depends(get_api_key)):
+    """
+    Trigger external market data ingestion (FRED, Federal Register, Stooq).
+    Protected by API key.
+    """
+    result = run_external_ingestion()
+    return {
+        "status": result.get("status"),
+        "documents_processed": result.get("documents", 0),
+        "chunks_created": result.get("chunks", 0),
+        "ingestion_run_id": result.get("ingestion_run_id"),
+        "source_origin": result.get("source_origin"),
+        "error": result.get("error"),
+    }
