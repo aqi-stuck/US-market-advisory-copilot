@@ -24,4 +24,4 @@ data/processed/
 .DS_Store
 .devcontainer/
 .vscode/
-.devcontainer
+.devcontainerworking/
