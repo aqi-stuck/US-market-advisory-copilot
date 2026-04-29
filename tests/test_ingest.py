@@ -6,7 +6,7 @@ def test_ingest_empty_documents(client):
     response = client.post(
         "/v1/ingest",
         json={"lane": "stocks", "documents": []},
-        headers={"Authorization": "Bearer change-me"},
+        headers={"Authorization": "Bearer test-api-key-12345"},
     )
     assert response.status_code == 200
     assert response.json()["documents_processed"] == 0

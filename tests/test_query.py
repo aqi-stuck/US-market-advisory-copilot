@@ -6,7 +6,7 @@ def test_query_returns_answer(client):
     response = client.post(
         "/v1/query",
         json={"query": "US equity markets", "top_k": 2},
-        headers={"Authorization": "Bearer change-me"},
+        headers={"Authorization": "Bearer test-api-key-12345"},
     )
     assert response.status_code == 200
     data = response.json()

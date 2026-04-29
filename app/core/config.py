@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     API_KEY: Optional[str] = None
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 50
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()
