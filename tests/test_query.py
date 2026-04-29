@@ -2,6 +2,7 @@ def test_query_requires_auth(client):
     response = client.post("/v1/query", json={"query": "test"})
     assert response.status_code == 401
 
+
 def test_query_returns_answer(client):
     response = client.post(
         "/v1/query",
