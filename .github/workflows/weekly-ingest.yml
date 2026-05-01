@@ -23,7 +23,10 @@ jobs:
 
           echo "🚀 Triggering ingestion at $API_URL/v1/ingest/trigger-external"
 
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          # Retry up to 5 times with 10s delay between attempts for transient failures
+          RESPONSE=$(curl --retry 5 --retry-delay 10 --retry-all-errors \
+            --connect-timeout 10 --max-time 120 \
+            -sS -w "\n%{http_code}" -X POST \
             "$API_URL/v1/ingest/trigger-external" \
             -H "Authorization: Bearer $API_KEY" \
             -H "Content-Type: application/json")
@@ -34,19 +37,25 @@ jobs:
           echo "📊 Response Status: $HTTP_CODE"
           echo "📋 Response Body: $BODY"
 
-          if [ "$HTTP_CODE" != "200" ]; then
+          # Accept both 200 (completed) and 202 (accepted/async) as success
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "202" ]; then
             echo "❌ Ingestion failed with HTTP $HTTP_CODE"
             exit 1
           fi
 
-          # Parse result
-          STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | head -1 | cut -d'"' -f4)
-          DOCS=$(echo "$BODY" | grep -o '"documents_processed":[0-9]*' | cut -d':' -f2)
-          CHUNKS=$(echo "$BODY" | grep -o '"chunks_created":[0-9]*' | cut -d':' -f2)
+          # Parse result with jq for robustness
+          STATUS=$(echo "$BODY" | jq -r '.status // empty' 2>/dev/null || echo "")
+          DOCS=$(echo "$BODY" | jq -r '.documents_processed // empty' 2>/dev/null || echo "")
+          CHUNKS=$(echo "$BODY" | jq -r '.chunks_created // empty' 2>/dev/null || echo "")
 
-          echo "✅ Ingest Status: $STATUS"
-          echo "📄 Documents: $DOCS"
-          echo "🔤 Chunks: $CHUNKS"
+          # Only enforce "completed" status if status field is present
+          if [ -n "$STATUS" ] && [ "$STATUS" != "completed" ]; then
+            echo "⚠️ Ingestion status: $STATUS (may still be processing)"
+          fi
+
+          echo "✅ Ingest Status: ${STATUS:-pending}"
+          echo "📄 Documents: ${DOCS:-N/A}"
+          echo "🔤 Chunks: ${CHUNKS:-N/A}"
 
           if [ "$STATUS" != "completed" ]; then
             echo "⚠️ Ingestion status: $STATUS"
