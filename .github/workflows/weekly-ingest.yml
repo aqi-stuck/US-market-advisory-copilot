@@ -21,10 +21,10 @@ jobs:
             exit 1
           fi
 
-          echo "🚀 Triggering ingestion at $API_URL/api/ingest/trigger-external"
+          echo "🚀 Triggering ingestion at $API_URL/v1/ingest/trigger-external"
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            "$API_URL/api/ingest/trigger-external" \
+            "$API_URL/v1/ingest/trigger-external" \
             -H "Authorization: Bearer $API_KEY" \
             -H "Content-Type: application/json")
 
